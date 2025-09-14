@@ -34,35 +34,106 @@ async function run() {
     const packagesCollection = client.db('travel&chill').collection('tourPackages')
     const bookingsCollection = client.db('travel&chill').collection('bookings')
 
-    app.get("/tourPackages", async(req, res) => {
-      const cursor = packagesCollection.find();
-      const result = await cursor.toArray();  
+    app.get("/tourPackages", async (req, res) => {
+
+      const email = req.query.email;
+
+      const query = {}
+      if(email){
+        query.guide_email = email;
+      }
+
+      const cursor = packagesCollection.find(query);
+      const result = await cursor.toArray();
       res.send(result);
     });
 
-    app.get('/tourPackages/:id', async(req, res) => {
+    // app.delete("/tourPackages/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   const result = await packagesCollection.deleteOne(query);
+    //   res.send(result);
+    // });
+
+
+    // app.patch("/tourPackages/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const updateData = req.body;
+    //   const query = { _id: new ObjectId(id) };
+    //   const updateDoc = { $set: updateData };
+    //   const result = await packagesCollection.updateOne(query, updateDoc);
+    //   res.send(result);
+    // });
+
+    app.get('/tourPackages/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await packagesCollection.findOne(query);
       res.send(result);
     })
 
+    app.post("/tourPackages", async (req, res) => {
+      const newTourPackage = req.body;
+      const result = await packagesCollection.insertOne(newTourPackage);
+      res.send(result);
+    });
 
-    app.get('/bookings', async(req, res) => {
+
+    app.get('/bookings', async (req, res) => {
       const email = req.query.email;
       const query = {
-        buyer_email : email
+        buyer_email: email
       }
       const result = await bookingsCollection.find(query).toArray();
+
+      // bad way to aggregate
+      // job_id => tour_id
+
+      for (const booking of result) {
+        const tour_id = booking.tour_id;
+        const tourQuery = { _id: new ObjectId(tour_id) };
+        const tour = await packagesCollection.findOne(tourQuery);
+        booking.tour_name = tour.tour_name;
+      }
+
+
       res.send(result);
     })
 
 
-    app.post('/bookings', async(req, res) => {
+    app.post('/bookings', async (req, res) => {
       const booking = req.body;
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     })
+
+    app.patch('/bookings/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { status } = req.body;
+
+        // Validate id
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({ error: "Invalid booking ID" });
+        }
+
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: { status: status || "pending" }, // default fallback
+        };
+
+        const result = await bookingsCollection.updateOne(query, updateDoc);
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: "Booking not found" });
+        }
+
+        res.send({ success: true, message: "Booking status updated", result });
+      } catch (error) {
+        console.error("Error updating booking:", error);
+        res.status(500).send({ error: "Internal server error" });
+      }
+    });
 
 
 
@@ -81,9 +152,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('Traveler running')
+  res.send('Traveler running')
 })
 
 app.listen(port, () => {
-    console.log(`Travel & Chill server running on port ${port}`);
+  console.log(`Travel & Chill server running on port ${port}`);
 })
