@@ -56,14 +56,14 @@ async function run() {
     // });
 
 
-    // app.patch("/tourPackages/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const updateData = req.body;
-    //   const query = { _id: new ObjectId(id) };
-    //   const updateDoc = { $set: updateData };
-    //   const result = await packagesCollection.updateOne(query, updateDoc);
-    //   res.send(result);
-    // });
+    app.patch("/tourPackages/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = { $set: updateData };
+      const result = await packagesCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
     app.get('/tourPackages/:id', async (req, res) => {
       const id = req.params.id;
