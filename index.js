@@ -48,11 +48,23 @@ async function run() {
     })
 
 
+    app.get('/bookings', async(req, res) => {
+      const email = req.query.email;
+      const query = {
+        buyer_email : email
+      }
+      const result = await bookingsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
     app.post('/bookings', async(req, res) => {
       const booking = req.body;
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     })
+
+
 
 
     // Send a ping to confirm a successful connection
