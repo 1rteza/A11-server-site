@@ -48,12 +48,12 @@ async function run() {
       res.send(result);
     });
 
-    // app.delete("/tourPackages/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const result = await packagesCollection.deleteOne(query);
-    //   res.send(result);
-    // });
+    app.delete("/tourPackages/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await packagesCollection.deleteOne(query);
+      res.send(result);
+    });
 
 
     app.patch("/tourPackages/:id", async (req, res) => {
