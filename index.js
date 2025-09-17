@@ -39,7 +39,7 @@ async function run() {
       const email = req.query.email;
 
       const query = {}
-      if(email){
+      if (email) {
         query.guide_email = email;
       }
 
@@ -47,6 +47,7 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+
 
     app.delete("/tourPackages/:id", async (req, res) => {
       const id = req.params.id;
@@ -106,6 +107,70 @@ async function run() {
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     })
+
+    app.post("/bookings", async (req, res) => {
+
+      const { ObjectId } = require('mongodb');
+      const tourId = new ObjectId(booking.tour_id);
+      try {
+        const booking = req.body;
+
+        // Insert the booking into the bookingsCollection
+        const bookingResult = await bookingsCollection.insertOne(booking);
+
+        // Update the booking count for the corresponding tour in the packagesCollection
+        const updateResult = await packagesCollection.findOneAndUpdate(
+          { _id: tourId },   // Convert the tour_id to ObjectId if needed
+          { $inc: { bookingCount: 1 } },  // Increment the booking count
+          { returnDocument: true }  // Return the updated document
+        );
+
+        if (!updateResult.value) {
+          // If the updateResult is null, it means the tour wasn't found
+          return res.status(404).send("Tour not found");
+        }
+
+
+        res.send({
+          success: true,
+          bookingResult,
+          updateResult,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Error creating booking");
+      }
+    });
+
+
+
+    // app.post("/bookings", async (req, res) => {
+    //   try {
+    //     const booking = req.body;
+    //     console.log('Tour ID:', booking.tour_id);
+
+
+    //     const bookingResult = await bookingsCollection.insertOne(booking);
+    //     console.log(bookingResult);
+
+    //     const updateResult = await packagesCollection.findOneAndUpdate(
+    //       { _id: new ObjectId(booking.tour_id) },
+    //       { $inc: { bookingCount: 1 } },
+    //       {returnDocument: true}
+    //     );
+    //     console.log(updateResult);
+
+    //     res.send({
+    //       success: true,
+    //       bookingResult,
+    //       updateResult
+    //     });
+    //   } catch (error) {
+    //     console.error(error);
+    //     res.status(500).send("Error creating booking");
+    //   }
+    // });
+
 
     app.patch('/bookings/:id', async (req, res) => {
       try {
