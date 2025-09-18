@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { messaging } = require('firebase-admin');
 const port = process.env.PORT || 3000;
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-admin-key.json");
 require('dotenv').config();
 
 
@@ -25,6 +28,33 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers?.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    console.log('decoded token: ', decoded);
+    req.decoded = decoded;
+    next();
+
+  }
+  catch (error) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -33,10 +63,15 @@ async function run() {
 
     const packagesCollection = client.db('travel&chill').collection('tourPackages')
     const bookingsCollection = client.db('travel&chill').collection('bookings')
-
-    app.get("/tourPackages", async (req, res) => {
+    // jobs => packages/ tour packages
+    // application => booking
+    app.get("/tourPackages",  async (req, res) => {
 
       const email = req.query.email;
+
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: 'forbidden access' })
+      // }
 
       const query = {}
       if (email) {
@@ -80,8 +115,15 @@ async function run() {
     });
 
 
-    app.get('/bookings', async (req, res) => {
+    app.get('/bookings', verifyFirebaseToken, async (req, res) => {
       const email = req.query.email;
+
+      // jwt works
+
+      if (email != req.decoded.email) {
+        return res.status(403).message({ message: 'forbidden access' })
+      }
+
       const query = {
         buyer_email: email
       }
