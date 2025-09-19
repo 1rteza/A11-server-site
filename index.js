@@ -70,8 +70,6 @@ async function run() {
 
     // jobs => packages/ tour packages
     // application => booking
-    
-    // howa uchit tourPackages/booking route
     app.get("/tourPackages",   async (req, res) => {
 
       const email = req.query.email;
@@ -142,7 +140,7 @@ async function run() {
       for (const booking of result) {
         const tour_id = booking.tour_id;
         const tourQuery = { _id: new ObjectId(tour_id) };
-        const tour = await packagesCollection.find(tourQuery);
+        const tour = await packagesCollection.findOne(tourQuery);
         booking.tour_name = tour.tour_name;
       }
 
