@@ -39,7 +39,7 @@ admin.initializeApp({
 
 const verifyFirebaseToken = async (req, res, next) => {
   const authHeader = req.headers?.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -72,13 +72,13 @@ async function run() {
     // application => booking
     
     // howa uchit tourPackages/booking route
-    app.get("/tourPackages", verifyFirebaseToken,  async (req, res) => {
+    app.get("/tourPackages",   async (req, res) => {
 
       const email = req.query.email;
 
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: 'forbidden access' })
-      }
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: 'forbidden access' })
+      // }
 
       const query = {}
       if (email) {
@@ -161,23 +161,21 @@ async function run() {
 
     app.post("/bookings", async (req, res) => {
 
-      const { ObjectId } = require('mongodb');
-      const tourId = new ObjectId(booking.tour_id);
       try {
         const booking = req.body;
+        const tourId = new ObjectId(booking.tour_id);
 
         // Insert the booking into the bookingsCollection
         const bookingResult = await bookingsCollection.insertOne(booking);
 
         // Update the booking count for the corresponding tour in the packagesCollection
         const updateResult = await packagesCollection.findOneAndUpdate(
-          { _id: tourId },   // Convert the tour_id to ObjectId if needed
-          { $inc: { bookingCount: 1 } },  // Increment the booking count
-          { returnDocument: true }  // Return the updated document
+          { _id: tourId }, 
+          { $inc: { bookingCount: 1 } },  
+          { returnDocument: true }  
         );
 
         if (!updateResult.value) {
-          // If the updateResult is null, it means the tour wasn't found
           return res.status(404).send("Tour not found");
         }
 
