@@ -4,8 +4,10 @@ const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { messaging } = require('firebase-admin');
 const port = process.env.PORT || 3000;
+
 const admin = require("firebase-admin");
 const serviceAccount = require("./firebase-admin-key.json");
+
 require('dotenv').config();
 
 
@@ -37,6 +39,7 @@ admin.initializeApp({
 
 const verifyFirebaseToken = async (req, res, next) => {
   const authHeader = req.headers?.authorization;
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -63,15 +66,19 @@ async function run() {
 
     const packagesCollection = client.db('travel&chill').collection('tourPackages')
     const bookingsCollection = client.db('travel&chill').collection('bookings')
+
+
     // jobs => packages/ tour packages
     // application => booking
-    app.get("/tourPackages",  async (req, res) => {
+    
+    // howa uchit tourPackages/booking route
+    app.get("/tourPackages", verifyFirebaseToken,  async (req, res) => {
 
       const email = req.query.email;
 
-      // if (email !== req.decoded.email) {
-      //   return res.status(403).send({ message: 'forbidden access' })
-      // }
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
 
       const query = {}
       if (email) {
@@ -120,8 +127,8 @@ async function run() {
 
       // jwt works
 
-      if (email != req.decoded.email) {
-        return res.status(403).message({ message: 'forbidden access' })
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' })
       }
 
       const query = {
@@ -135,14 +142,16 @@ async function run() {
       for (const booking of result) {
         const tour_id = booking.tour_id;
         const tourQuery = { _id: new ObjectId(tour_id) };
-        const tour = await packagesCollection.findOne(tourQuery);
+        const tour = await packagesCollection.find(tourQuery);
         booking.tour_name = tour.tour_name;
       }
 
 
       res.send(result);
     })
+// 59_5-7 '/applications/job/:job_id'
 
+// 61-4  firebase token video
 
     app.post('/bookings', async (req, res) => {
       const booking = req.body;
